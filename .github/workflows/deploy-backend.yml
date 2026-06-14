@@ -1,0 +1,66 @@
+﻿name: Build and Deploy Backend to CCE
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-backend.yml"
+
+env:
+  SWR_REGISTRY: swr.cn-north-4.myhuaweicloud.com
+  SWR_NAMESPACE: cloud-course-2023112411
+  IMAGE_NAME: backend
+  DEPLOYMENT_NAME: backend
+  CONTAINER_NAME: backend
+
+jobs:
+  build-push-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set image tag
+        run: |
+          echo "IMAGE_TAG=ci-${GITHUB_SHA::7}" >> $GITHUB_ENV
+          echo "FULL_IMAGE=${SWR_REGISTRY}/${SWR_NAMESPACE}/${IMAGE_NAME}:ci-${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      - name: Login to Huawei Cloud SWR
+        run: |
+          echo "${{ secrets.SWR_PASSWORD }}" | docker login \
+            -u "${{ secrets.SWR_USERNAME }}" \
+            --password-stdin \
+            ${SWR_REGISTRY}
+
+      - name: Build backend image
+        run: |
+          docker build -t ${FULL_IMAGE} ./backend
+
+      - name: Push backend image to SWR
+        run: |
+          docker push ${FULL_IMAGE}
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: latest
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG_B64 }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Update backend Deployment image
+        run: |
+          kubectl set image deployment/${DEPLOYMENT_NAME} ${CONTAINER_NAME}=${FULL_IMAGE}
+          kubectl rollout status deployment/${DEPLOYMENT_NAME} --timeout=180s
+
+      - name: Show deployment result
+        run: |
+          kubectl get deployment ${DEPLOYMENT_NAME} -o wide
+          kubectl get pods -l app=backend -o wide
+          kubectl get deployment ${DEPLOYMENT_NAME} -o jsonpath='{.spec.template.spec.containers[0].image}'; echo
