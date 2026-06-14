@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>云计算课程设计</title>
+  <style>
+    body { font-family: Arial, "Microsoft YaHei", sans-serif; margin: 40px; line-height: 1.6; }
+    button { margin: 6px 8px 6px 0; padding: 8px 12px; }
+    pre { background: #f5f5f5; padding: 12px; border: 1px solid #ddd; }
+  </style>
+</head>
+<body>
+  <h1>云计算课程设计</h1>
+  <p>姓名：刘彬彬</p>
+  <p>学号：2023112411</p>
+  <p>前端：Nginx；后端：Flask API；数据库：Redis</p>
+
+  <button onclick="ping()">测试 /api/ping</button>
+  <button onclick="count()">测试 Redis 计数</button>
+  <button onclick="setValue()">写入 testkey=hello</button>
+  <button onclick="getValue()">读取 testkey</button>
+
+  <h3>返回结果</h3>
+  <pre id="result">等待请求...</pre>
+
+  <script>
+    async function show(url, options) {
+      const res = await fetch(url, options || {});
+      const data = await res.json();
+      document.getElementById('result').innerText = JSON.stringify(data, null, 2);
+    }
+    function ping() { show('/api/ping'); }
+    function count() { show('/api/count'); }
+    function setValue() { show('/api/redis/set?key=testkey&value=hello', { method: 'POST' }); }
+    function getValue() { show('/api/redis/get?key=testkey'); }
+  </script>
+</body>
+</html>
