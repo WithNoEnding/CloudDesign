@@ -1,28 +1,46 @@
-# Optional Task 2: CI/CD Notes
+# CI/CD 流水线说明
 
-The CI/CD workflow is implemented with GitHub Actions.
+本项目使用 GitHub Actions 完成附加题 2 的 CI/CD 流水线。流水线文件位于：
 
-## Pipeline flow
+```text
+.github/workflows/deploy-backend.yml
+```
 
-1. Checkout source code.
-2. Generate image tag from the Git commit hash.
-3. Log in to Huawei Cloud SWR.
-4. Build the backend Docker image.
-5. Push the backend image to SWR.
-6. Configure kubeconfig from GitHub Secrets.
-7. Run `kubectl set image` to update the backend Deployment.
-8. Wait for `kubectl rollout status` to finish.
-9. Print the Deployment image and Pod status.
+## 触发条件
+
+当前 workflow 在以下情况触发：
+
+```text
+push 到 main 分支，并且 backend/ 或 .github/workflows/deploy-backend.yml 发生变化
+```
+
+这样可以避免每次修改文档都触发镜像构建和部署。
+
+## 流水线流程
+
+1. 拉取 GitHub 仓库代码。
+2. 使用 Git commit hash 生成镜像 tag，格式为 `ci-xxxxxxx`。
+3. 登录华为云 SWR。
+4. 构建 backend Docker 镜像。
+5. 推送 backend 镜像到 SWR。
+6. 从 GitHub Secrets 解码 kubeconfig。
+7. 执行 `kubectl set image` 更新 CCE 中的 backend Deployment。
+8. 执行 `kubectl rollout status` 等待滚动更新完成。
+9. 输出 Deployment、Pod 状态和当前镜像地址。
 
 ## GitHub Secrets
 
-The workflow uses the following repository secrets. Their values must not be committed to GitHub.
+workflow 使用以下仓库 Secrets：
 
-- `SWR_USERNAME`
-- `SWR_PASSWORD`
-- `KUBE_CONFIG_B64`
+```text
+SWR_USERNAME
+SWR_PASSWORD
+KUBE_CONFIG_B64
+```
 
-## Validation commands
+仓库中只能保存 Secret 名称引用，不能提交这些值本身。
+
+## 验证命令
 
 ```bash
 kubectl get deployment backend -o wide
@@ -30,16 +48,16 @@ kubectl get pods -l app=backend -o wide
 kubectl get deployment backend -o jsonpath='{.spec.template.spec.containers[0].image}'; echo
 ```
 
-The expected image tag format is:
+期望镜像格式：
 
 ```text
 swr.cn-north-4.myhuaweicloud.com/cloud-course-2023112411/backend:ci-xxxxxxx
 ```
 
-## CI, CD and GitOps
+## CI、CD 与 GitOps 区别
 
-Continuous Integration focuses on automatic build and verification after code changes. In this project, GitHub Actions builds the backend image and pushes it to SWR.
+CI 表示持续集成，重点是代码提交后的自动构建和检查。本项目中，GitHub Actions 会在代码更新后自动构建 backend 镜像。
 
-Continuous Deployment focuses on releasing the build artifact to the running environment. In this project, GitHub Actions updates the Kubernetes Deployment image and waits for the rollout result.
+CD 表示持续部署，重点是将构建产物发布到运行环境。本项目中，流水线会把新镜像推送到 SWR，并更新 Kubernetes Deployment。
 
-Strict GitOps usually uses a controller such as Argo CD or Flux to continuously reconcile the cluster state with declarative files in Git. This project uses Git-triggered CI/CD and `kubectl set image`, so it is an automated deployment workflow, not a complete GitOps implementation.
+GitOps 通常要求由 Argo CD 或 Flux 这类集群控制器持续对比 Git 仓库中的声明式配置，并自动同步集群状态。本项目使用 GitHub Actions 直接执行 `kubectl set image`，属于自动化部署流程，不是完整 GitOps 实现。
