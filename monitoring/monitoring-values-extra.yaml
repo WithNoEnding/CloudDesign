@@ -1,0 +1,58 @@
+# kube-prometheus-stack values used for the optional monitoring task.
+# This file contains no credentials.
+# It redirects core images to Huawei Cloud SWR and disables components that were not required in the experiment.
+
+kubeStateMetrics:
+  enabled: false
+
+grafana:
+  image:
+    registry: swr.cn-north-4.myhuaweicloud.com
+    repository: cloud-course-2023112411/grafana
+    tag: 12.4.3
+    pullPolicy: IfNotPresent
+  sidecar:
+    dashboards:
+      enabled: false
+    datasources:
+      enabled: false
+
+prometheus:
+  prometheusSpec:
+    image:
+      registry: swr.cn-north-4.myhuaweicloud.com
+      repository: cloud-course-2023112411/prometheus
+      tag: v3.11.2
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+
+alertmanager:
+  alertmanagerSpec:
+    image:
+      registry: swr.cn-north-4.myhuaweicloud.com
+      repository: cloud-course-2023112411/alertmanager
+      tag: v0.32.0
+
+prometheusOperator:
+  image:
+    registry: swr.cn-north-4.myhuaweicloud.com
+    repository: cloud-course-2023112411/prometheus-operator
+    tag: v0.90.1
+  prometheusConfigReloader:
+    image:
+      registry: swr.cn-north-4.myhuaweicloud.com
+      repository: cloud-course-2023112411/prometheus-config-reloader
+      tag: v0.90.1
+  admissionWebhooks:
+    patch:
+      image:
+        registry: swr.cn-north-4.myhuaweicloud.com
+        repository: cloud-course-2023112411/kube-webhook-certgen
+        tag: 1.8.1
+
+prometheus-node-exporter:
+  image:
+    registry: swr.cn-north-4.myhuaweicloud.com
+    repository: cloud-course-2023112411/node-exporter
+    tag: v1.11.1
+    pullPolicy: IfNotPresent

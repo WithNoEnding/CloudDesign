@@ -1,4 +1,4 @@
-﻿name: Build and Deploy Backend to CCE
+name: Build and Deploy Backend to CCE
 
 on:
   push:
